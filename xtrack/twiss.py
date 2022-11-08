@@ -884,6 +884,41 @@ class TwissInit:
         self.muzeta = muzeta
 
 class TwissTable(Table):
+    """
+        Table of twiss parameters has the following array-like fields:
+         - s [m]:       Reference accumulated path length
+         - x [m]:       Horizontal position
+         - px[1]:       Px / (m/m0 * p0c) = beta_x gamma /(beta0 gamma0)
+         - y [m]:       Vertical position
+         - py [1]:      Py / (m/m0 * p0c)
+         - zeta [m]:    (s - beta0 c t )
+         - delta[1]:    (Pc m0/m - p0c) /p0c
+         - ptau [1]:    (Energy m0/m - Energy0) / p0c
+         - betx [m]:    Horizontal twiss beta-function
+         - bety [m]:    Vertical twiss beta-function
+         - alfx [1]:    Horizontal twiss alpha-function
+         - alfx [1]:    Horizontal twiss alpha-function
+         - gamx [1/m]:  Horizontal twiss gamma-function
+         - gamy [1/m]:  Vertical twiss gamma-function
+         - ux [1]:      Horizontal phase advance
+         - uy [1]:      Vertical phase advance
+         - muzeta
+         - x [1]:       Horizontal tune qx=mux[-1]
+         - y [1]:       Vertical tune qy=mux[-1]       
+         - qs
+         - x [m]:       Horizontal dispersion D_x
+         - y [m]:       Vertical dispersion D_y
+         - dzeta
+         - dpx
+         - dpy
+        
+        and the following scalar-like fields:
+         - circumference [m]
+         - T_rev [s]
+         - slip_factor [1]:  Slip factor eta
+         - momentum_compaction_factor [1]:  alpha_c = eta + 1/gamma0^2 = 1/gamma0_tr^2
+         - betz0
+    """
 
     def get_twiss_init(self, at_element):
 

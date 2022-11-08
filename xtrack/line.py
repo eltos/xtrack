@@ -356,6 +356,16 @@ class Line:
 
     def insert_element(self, index=None, element=None, name=None, at_s=None,
                        s_tol=1e-6):
+        """
+        Insert an element into the line at a given index or s-coordinate.
+        
+        Args:
+            element: The new element. 
+            name (str): The name of the new element in the line.
+            index (int or str): Index or name of an element before which to insert the new element.
+            at_s (float): s-coordinate in m where to insert element. Thick elements and drifts are
+                split and inserted as needed. Either at_s OR index is required.
+        """
 
         if isinstance(index, str):
             assert index in self.element_names

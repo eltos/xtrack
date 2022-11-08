@@ -494,6 +494,28 @@ class Tracker:
         reverse=False,
         use_full_inverse=None
         ):
+        """
+        Calculate the twiss parameters and other quantities like tunes, chromaticities, slip factor, etc. 
+        
+        Args:
+            method (str): Method to use, either '6d' or '4d'.
+            particle_ref (xp.Particles): Reference particle for closed orbit search. Defaults to reference particle
+                of tracker or line. Ignored if particle_co_guess is given.
+            particle_co_guess (xp.Particles): Particle with initial coordinates for closed orbit search.
+            particle_on_co (xp.Particles): If not None, use these particle coordinates on the closed orbit
+                for optics calculation, instead of performing a closed orbit search first.
+            continue_on_closed_orbit_error (bool): if True, continue with second attempt if closed orbit search fails
+                on the first attempt.
+            at_s (float or array of floats): s-coordinate(s) in m where to evaluate twiss parameters.
+                Must not be used together with at_elements.
+            at_elements (array of str or int): List of element indices or names where to evaluate twiss parameters.
+                Must not be used together with at_s.
+            values_at_element_exit (bool): if True, return values at element exit instead of element entry.
+        
+        Returns:
+            dict: Twiss results
+        
+        """
 
         self._check_invalidated()
 
@@ -503,6 +525,19 @@ class Tracker:
         return twiss_from_tracker(self, **kwargs)
 
     def survey(self,X0=0,Y0=0,Z0=0,theta0=0,phi0=0,psi0=0, element0=0, reverse=False):
+        """
+        Compute the geometrical layout, i.e. the coordinates of all elements in a global reference system.
+
+        Args:
+            X0 (float): X position of line start.
+            Y0 (float): Y position of line start.
+            Z0 (float): Z position of line start.
+            theta0 (float): Azimuthal angle of line start.
+            phi0 (float): Elevation angle of line start.
+            psi0 (float): Roll angle of line start.
+            element0 (str or int): Name or index of element from where to start survey.
+            reverse (bool): If true, compute survey in reversed order, i.e. going backwards.
+        """
         return survey_from_tracker(self, X0=X0, Y0=Y0, Z0=Z0, theta0=theta0,
                                    phi0=phi0, psi0=psi0, element0=element0,
                                    reverse=reverse)
