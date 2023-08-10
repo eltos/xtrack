@@ -195,13 +195,13 @@ def test_beam_position_monitor(test_context):
 
     particles = xp.Particles(
         p0c=6.5e12,
-        x=0.1*np.arange(512), # generate a few more than we record to test "num_particles"
-        zeta=-2.99792458e8*np.tile([0.0, 0.5], 256),
+        x=0.1*np.arange(514), # generate a few more than we record to test "num_particles"
+        zeta=-2.99792458e8*np.tile([0.0, 0.5], 257),
         _context=test_context,
     )
 
     monitor = xt.BeamPositionMonitor(
-        #num_particles=512,
+        num_particles=512,
         start_at_turn=0,
         stop_at_turn=10,
         frev=1,

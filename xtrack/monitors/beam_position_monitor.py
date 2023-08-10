@@ -18,9 +18,10 @@ from ..general import _pkg_root
 
 
 class BeamPositionMonitorRecord(xo.Struct):
-    count = xo.Int64[:]
-    x_sum = xo.Float64[:]
-    y_sum = xo.Float64[:]
+    """Monitor data of one turn (temporary)"""
+    slot = xo.Int64[:]
+    x = xo.Float64[:]
+    y = xo.Float64[:]
 
 
 class BeamPositionMonitor(BeamElement):
@@ -39,11 +40,9 @@ class BeamPositionMonitor(BeamElement):
     behaves_like_drift = True
     allow_backtrack = True
 
-    # TODO: it currently only works on CPU!
-    needs_cpu = True
-    iscollective = True
-    
-    properties = [field.name for field in BeamPositionMonitorRecord._fields]
+    # TODO
+    #needs_cpu = True
+    iscollective = True  # still required for aggregation
 
     _extra_c_sources = [
         _pkg_root.joinpath('monitors/beam_position_monitor.h')
@@ -82,7 +81,7 @@ class BeamPositionMonitor(BeamElement):
         
 
         Args:
-            num_particles (int, optional): Number of particles to monitor. Defaults to -1 which means ALL.
+            num_particles (int, optional): Number of particles to monitor.
             particle_id_start (int, optional): First particle id to monitor. Defaults to 0.
             particle_id_range (tuple, optional): Range of particle ids to monitor (start, stop). Stop is exclusive.
                                                  Defaults to (particle_id_start, particle_id_start+num_particles).
@@ -102,12 +101,13 @@ class BeamPositionMonitor(BeamElement):
                 if particle_id_start is None:
                     particle_id_start = 0
                 if num_particles is None:
-                    num_particles = -1
-            elif particle_id_start is None and num_particles is None:
-                particle_id_start = particle_id_range[0]
-                num_particles = particle_id_range[1] - particle_id_range[0]
+                    raise ValueError("Either the parameter `particle_id_range` or `num_particles` is required")
             else:
-                raise ValueError("Parameter `particle_id_range` must not be used together with `num_particles` and/or `particle_id_start`")
+                if particle_id_start is None and num_particles is None:
+                    particle_id_start = particle_id_range[0]
+                    num_particles = particle_id_range[1] - particle_id_range[0]
+                else:
+                    raise ValueError("Parameter `particle_id_range` must not be used together with `num_particles` and/or `particle_id_start`")
             if start_at_turn is None:
                 start_at_turn = 0
             if stop_at_turn is None:
@@ -118,13 +118,33 @@ class BeamPositionMonitor(BeamElement):
                 sampling_frequency = 1
             
             if "data" not in kwargs:
-                # explicitely init with zeros (instead of size only) to have consistent initial values
-                size = int(( stop_at_turn - start_at_turn ) * sampling_frequency / frev)
-                kwargs["data"] = {prop: np.zeros(size) for prop in self.properties}
+                # explicitely init values (instead of size only) to have consistent initial values
+                kwargs["data"] = {prop: -np.ones(num_particles) for prop in ("slot","x","y")}
 
             super().__init__(particle_id_start=particle_id_start, num_particles=num_particles,
                              start_at_turn=start_at_turn, stop_at_turn=stop_at_turn, frev=frev,
                              sampling_frequency=sampling_frequency, **kwargs)
+        
+        self.size = int(( self.stop_at_turn - self.start_at_turn ) * self.sampling_frequency / self.frev)
+        self.count = np.zeros(self.size, dtype=np.int64)
+        self.x_sum = np.zeros(self.size, dtype=np.float64)
+        self.y_sum = np.zeros(self.size, dtype=np.float64)
+
+    
+    def track(self, *args, **kwargs):
+        super().track(*args, **kwargs)
+
+        # Aggregate data
+        slot = self.data.slot.to_nparray()
+        x = self.data.x.to_nparray()
+        y = self.data.y.to_nparray()
+        mask = (slot >= 0) & (slot < self.size)  # only valid slots
+        where = slot[mask]
+        np.add.at(self.count, where, 1)
+        np.add.at(self.x_sum, where, x[mask])
+        np.add.at(self.y_sum, where, y[mask])
+        # Reset intermediate buffer
+        self.data.slot.to_nparray()[:] = -1
 
 
     def __repr__(self):
@@ -135,10 +155,7 @@ class BeamPositionMonitor(BeamElement):
         )
     
 
-    def __getattr__(self, attr):
-        if attr in self.properties:
-            return getattr(self.data, attr).to_nparray()
-        
+    def __getattr__(self, attr):        
         if attr in ('x_mean', 'y_mean', 'x_cen', 'y_cen', 'x_centroid', 'y_centroid'):
             with np.errstate(invalid='ignore'):  # NaN for zero particles is expected behaviour
                 return getattr(self, attr[0]+"_sum") / self.count
